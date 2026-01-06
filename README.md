@@ -2,6 +2,8 @@
 
 An intelligent guitar effects processor that configures itself based on natural language descriptions of the desired tone.
 
+![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal.png)
+
 ## Features
 
 - **Real-time Audio Processing:** Powered by Spotify's `pedalboard` library.
