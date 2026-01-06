@@ -7,20 +7,22 @@ An intelligent guitar effects processor that configures itself based on natural 
 ## Features
 
 - **Real-time Audio Processing:** Powered by Spotify's [pedalboard](https://github.com/spotify/pedalboard) library.
-- **AI Tone Generation:** Uses a locally running [Ollama](https://ollama.com/) instance to interpret tone requests (e.g., "I want a crunchy blues tone" or "Spacey ambient reverb").
+- **AI Tone Generation:** Uses a locally running [Ollama](https://ollama.com/) instance to interpret tone requests.
+- **Configurable Endpoint:** Support for custom Ollama API URLs (defaults to `http://localhost:11434`).
+- **Dual Interfaces:** Choose between a modern Streamlit web interface or a lightweight Tkinter desktop application.
 - **Device Selection:** Simple UI to select input (guitar interface) and output (speakers/headphones) devices.
-- **Live Updates:** Apply new effect chains without restarting the application.
+- **Live Updates:** Apply new effect chains and adjust parameters in real-time without restarting the application.
 
 ## Prerequisites
 
 1.  **Python 3.8+**
 2.  **Ollama**:
     *   Install from [ollama.com](https://ollama.com).
-    *   Pull a model (e.g., `llama3` or `mistral`):
+    *   Pull a model (e.g., `llama3` or `gemma3`):
         ```bash
         ollama pull llama3
         ```
-    *   Ensure Ollama is running (`ollama serve`).
+    *   Ensure Ollama is running (`ollama serve`). If running on a different machine or port, you can configure the URL in the application.
 
 ## Installation
 
@@ -42,16 +44,25 @@ An intelligent guitar effects processor that configures itself based on natural 
 
 ## Usage
 
+### Option A: Streamlit Web Interface (Recommended)
 1.  Run the application:
     ```bash
     streamlit run app.py
     ```
     *This will open the interface in your default web browser.*
 
-2.  **Sidebar:** Select your Input Device (e.g., audio interface) and Output Device.
-3.  **Main Panel:** Type a description of the tone you want (e.g., "80s rock solo").
-4.  Click **Generate Tone**.
-5.  In the Sidebar, click **Start Processing** to hear the result.
+### Option B: Tkinter Desktop Application
+1.  Run the application:
+    ```bash
+    python main.py
+    ```
+
+## Application Steps
+1.  **Configuration:** Select your Input Device (e.g., audio interface) and Output Device. Ensure the Ollama URL is correct.
+2.  **Tone Description:** Type a description of the tone you want (e.g., "80s rock solo").
+3.  **Generate:** Click **Generate Tone**.
+4.  **Process:** Click **Start Processing** to hear the result.
+5.  **Adjust:** Use the generated sliders to fine-tune individual pedal parameters.
 
 ## License
 

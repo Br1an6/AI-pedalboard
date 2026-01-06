@@ -32,10 +32,22 @@ st.markdown("""
 # --- Resources (Cached) ---
 @st.cache_resource
 def get_audio_manager():
+    """
+    Returns a cached instance of AudioManager.
+    
+    Returns:
+        AudioManager: The singleton-like instance of AudioManager.
+    """
     return AudioManager()
 
 @st.cache_resource
 def get_ai_assistant():
+    """
+    Returns a cached instance of AIAssistant.
+
+    Returns:
+        AIAssistant: The singleton-like instance of AIAssistant.
+    """
     return AIAssistant()
 
 audio = get_audio_manager()
@@ -45,6 +57,14 @@ ai = get_ai_assistant()
 def render_param_widget(key, val, unique_key):
     """
     Returns an appropriate Streamlit widget for a given parameter based on its name.
+
+    Args:
+        key (str): The name of the parameter (e.g., 'drive_db', 'rate_hz').
+        val (float|str): The current value of the parameter.
+        unique_key (str): A unique identifier for the widget key in Streamlit.
+
+    Returns:
+        float|str: The new value selected by the user via the widget.
     """
     label = key.replace("_", " ").title().replace(" Db", " (dB)").replace(" Hz", " (Hz)").replace(" Ms", " (ms)")
     
@@ -81,8 +101,16 @@ def render_param_widget(key, val, unique_key):
 # --- Sidebar ---
 st.sidebar.title("🎛 Settings")
 
-# 1. Model
-st.sidebar.subheader("🧠 AI Model")
+# 1. Model & Connection
+st.sidebar.subheader("🧠 AI Settings")
+
+# Connection Settings
+current_url = ai.url
+new_url = st.sidebar.text_input("Ollama URL", value=current_url)
+if new_url != ai.url:
+    ai.set_url(new_url)
+
+# Model Selection
 available_models = ai.get_available_models()
 if available_models:
     default_idx = 0
@@ -95,7 +123,7 @@ if available_models:
     if selected_model != ai.model:
         ai.set_model(selected_model)
 else:
-    st.sidebar.error("No models found.")
+    st.sidebar.error("No models found. Check URL.")
 
 st.sidebar.markdown("---")
 
