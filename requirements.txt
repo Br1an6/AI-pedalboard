@@ -1,0 +1,4 @@
+pedalboard
+requests
+streamlit
+watchdog
