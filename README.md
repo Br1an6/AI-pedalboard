@@ -6,7 +6,7 @@ An intelligent guitar effects processor that configures itself based on natural 
 
 ## Features
 
-- **Real-time Audio Processing:** Powered by Spotify's `pedalboard` library.
+- **Real-time Audio Processing:** Powered by Spotify's [pedalboard](https://github.com/spotify/pedalboard) library.
 - **AI Tone Generation:** Uses a locally running [Ollama](https://ollama.com/) instance to interpret tone requests (e.g., "I want a crunchy blues tone" or "Spacey ambient reverb").
 - **Device Selection:** Simple UI to select input (guitar interface) and output (speakers/headphones) devices.
 - **Live Updates:** Apply new effect chains without restarting the application.
