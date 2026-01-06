@@ -36,7 +36,7 @@ An intelligent guitar effects processor that configures itself based on natural 
     ```
 
 ## ⚠️ Important Notes
-
+- **Set up your input/output devices first:** The tone generation only works after configuring your audio devices.
 - **Audio Feedback:** The application bypasses standard feedback safety checks to allow more flexible device routing. **Please use headphones** or keep your volume low when starting the stream to avoid loud feedback loops between your microphone and speakers.
 - **Latency:** As this is running in Python, you may experience slight audio delay (latency) depending on your hardware and OS configuration. For best results, use a dedicated ASIO driver (Windows) or a low-latency audio interface.
 
