@@ -82,7 +82,6 @@ An intelligent guitar effects processor that configures itself based on natural 
 
 ## TODO:
 * Pedal board UI: drag drop, on off
-* Update the system prompt
 
 ## License
 

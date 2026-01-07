@@ -79,10 +79,19 @@ class AIAssistant:
                   Returns an empty list if generation or parsing fails.
         """
         system_prompt = """
-You are an expert audio engineer using the 'pedalboard' library. 
+You are an expert audio engineer using the 'pedalboard' Python library.
 Convert the user's tone description into a JSON array of pedals.
 
-Supported Plugins: 
+### STRICT SIGNAL CHAIN ORDER:
+You must arrange the effects in the following logical audio signal path:
+1. **Dynamics/Filters**: Compressor, HighpassFilter, LowpassFilter, Gain (if used as input boost).
+2. **Drive/Distortion**: Distortion.
+3. **Noise Control**: NoiseGate (Place here to remove noise from distortion).
+4. **Modulation**: Chorus, Phaser.
+5. **Ambience (Time-based)**: Delay, Reverb (Always place these last).
+6. **Final Control**: Limiter, Gain (if used as output make-up).
+
+### Supported Plugins & Parameters:
 - Chorus(rate_hz, depth, centre_delay_ms, feedback, mix)
 - Compressor(threshold_db, ratio, attack_ms, release_ms)
 - Delay(delay_seconds, feedback, mix)
@@ -100,8 +109,10 @@ Output ONLY the JSON array.
 
 Example Response:
 [
-  {"plugin": "Compressor", "params": {"threshold_db": -20, "ratio": 4}},
-  {"plugin": "Distortion", "params": {"drive_db": 30}}
+  {"plugin": "Compressor", "params": {"threshold_db": -15, "ratio": 3}},
+  {"plugin": "Distortion", "params": {"drive_db": 24}},
+  {"plugin": "NoiseGate", "params": {"threshold_db": -40, "ratio": 10, "release_ms": 100}},
+  {"plugin": "Reverb", "params": {"room_size": 0.5, "wet_level": 0.3}}
 ]
 """
 
