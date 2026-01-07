@@ -2,3 +2,4 @@ pedalboard
 requests
 streamlit
 watchdog
+streamlit-sortables

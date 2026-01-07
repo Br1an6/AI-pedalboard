@@ -2,6 +2,8 @@ import streamlit as st
 import logging
 import json
 import threading
+import uuid
+from streamlit_sortables import sort_items
 
 from ai_assistant import AIAssistant
 from audio_manager import AudioManager
@@ -26,91 +28,84 @@ st.markdown("""
         border-bottom: 2px solid #666;
         padding-bottom: 5px;
     }
+    .st-emotion-cache-1wbqy5l { 
+        /* Streamlit Sortables Container Style Override if needed */
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- Resources (Cached) ---
 @st.cache_resource
 def get_audio_manager():
-    """
-    Returns a cached instance of AudioManager.
-    
-    Returns:
-        AudioManager: The singleton-like instance of AudioManager.
-    """
     return AudioManager()
 
 @st.cache_resource
 def get_ai_assistant():
-    """
-    Returns a cached instance of AIAssistant.
-
-    Returns:
-        AIAssistant: The singleton-like instance of AIAssistant.
-    """
     return AIAssistant()
 
 audio = get_audio_manager()
 ai = get_ai_assistant()
 
-# --- Helper: Parameter Widgets ---
+# --- Helpers ---
 def render_param_widget(key, val, unique_key):
     """
     Returns an appropriate Streamlit widget for a given parameter based on its name.
-
-    Args:
-        key (str): The name of the parameter (e.g., 'drive_db', 'rate_hz').
-        val (float|str): The current value of the parameter.
-        unique_key (str): A unique identifier for the widget key in Streamlit.
-
-    Returns:
-        float|str: The new value selected by the user via the widget.
     """
     label = key.replace("_", " ").title().replace(" Db", " (dB)").replace(" Hz", " (Hz)").replace(" Ms", " (ms)")
     
-    # Heuristics for ranges
     try:
         val_float = float(val)
     except:
-        # If not a number, return as is (text)
-        return val
+        return val # Not a number
 
-    if "mix" in key or "depth" in key or "feedback" in key or "level" in key or "damping" in key:
-        # 0.0 to 1.0 range
+    # Heuristics for ranges
+    if any(x in key for x in ["mix", "depth", "feedback", "level", "damping", "dry_level", "wet_level"]):
         return st.slider(label, 0.0, 1.0, val_float, 0.01, key=unique_key)
     
     elif "db" in key:
-        # Decibels (usually -60 to +24 or so)
-        # Adjust min/max if the current value is outside standard bounds
         min_db = min(-60.0, val_float - 10)
         max_db = max(24.0, val_float + 10)
         return st.slider(label, min_db, max_db, val_float, 0.5, key=unique_key)
     
     elif "hz" in key:
-        # Frequency
         return st.number_input(label, 0.0, 20000.0, val_float, 10.0, key=unique_key)
     
     elif "ms" in key:
-        # Time
         return st.number_input(label, 0.0, 5000.0, val_float, 10.0, key=unique_key)
     
     else:
-        # Generic fallback
         return st.number_input(label, value=val_float, key=unique_key)
+
+def ensure_metadata(pedal_list):
+    """
+    Ensures every pedal dict has a 'uuid' and 'active' status.
+    """
+    for p in pedal_list:
+        if 'uuid' not in p:
+            p['uuid'] = str(uuid.uuid4())[:8]
+        if 'active' not in p:
+            p['active'] = True
+    return pedal_list
+
+def get_pedal_label(p):
+    return f"{p['plugin']}::{p['uuid']}"
+
+def parse_pedal_label(label):
+    parts = label.split("::")
+    if len(parts) == 2:
+        return parts[0], parts[1]
+    return label, None
 
 # --- Sidebar ---
 st.sidebar.title("🎛 Settings")
 
 # 1. Model & Connection
 st.sidebar.subheader("🧠 AI Settings")
-
-# Connection Settings
 current_url = ai.url
 new_url = st.sidebar.text_input("Ollama URL", value=current_url)
 if new_url != ai.url:
     ai.set_url(new_url)
 
-# Model Selection
 available_models = ai.get_available_models()
 if available_models:
     default_idx = 0
@@ -148,6 +143,11 @@ selected_output = st.sidebar.selectbox("Output", output_devices, index=output_in
 
 # 3. Stream Control
 st.sidebar.markdown("---")
+# Prepare active config for streaming
+active_stream_config = []
+if "current_config" in st.session_state:
+    active_stream_config = [p for p in st.session_state["current_config"] if p.get('active', True)]
+
 if audio.is_active():
     st.sidebar.success("● Audio is Streaming")
     if st.sidebar.button("Stop Processing", type="primary"):
@@ -156,7 +156,7 @@ if audio.is_active():
 else:
     st.sidebar.warning("○ Audio is Stopped")
     if st.sidebar.button("Start Processing"):
-        success, msg = audio.start_stream(selected_input, selected_output, st.session_state.get("current_config", []))
+        success, msg = audio.start_stream(selected_input, selected_output, active_stream_config)
         if not success:
             st.error(f"Failed to start: {msg}")
         else:
@@ -180,10 +180,11 @@ if st.button("Generate Tone 🪄"):
         with st.spinner(f"Asking {ai.model}..."):
             config = ai.generate_pedal_config(user_prompt)
             if config:
-                st.session_state["current_config"] = config
+                st.session_state["current_config"] = ensure_metadata(config)
+                st.session_state["unused_pedals"] = [] # Clear unused on new generation? Or keep? Let's clear to start fresh.
                 st.success("Tone generated!")
                 if audio.is_active():
-                    audio.update_plugins(config)
+                    audio.update_plugins(st.session_state["current_config"])
             else:
                 st.error("AI failed to return a valid configuration.")
 
@@ -191,59 +192,148 @@ if st.button("Generate Tone 🪄"):
 tab1, tab2 = st.tabs(["🎛 Pedalboard", "📝 Raw AI Response"])
 
 with tab1:
-    st.subheader("Current Pedal Chain")
-    
-    if "current_config" in st.session_state and st.session_state["current_config"]:
-        config = st.session_state["current_config"]
-        
-        # Track if any value changed to update audio immediately
-        config_changed = False
-        
-        cols_per_row = 4
-        for i in range(0, len(config), cols_per_row):
-            cols = st.columns(cols_per_row)
-            for j in range(cols_per_row):
-                if i + j < len(config):
-                    idx = i + j
-                    item = config[idx]
-                    plugin_name = item.get('plugin', 'Unknown')
-                    params = item.get('params', {})
-                    
-                    with cols[j]:
-                        with st.container(border=True):
-                            st.markdown(f"<div class='pedal-title'>{plugin_name}</div>", unsafe_allow_html=True)
-                            
-                            # Render interactive widgets for each param
-                            new_params = {}
-                            for key, val in params.items():
-                                unique_key = f"pedal_{idx}_{key}"
-                                new_val = render_param_widget(key, val, unique_key)
-                                new_params[key] = new_val
-                                
-                                # Check for changes (rudimentary check)
-                                if new_val != val:
-                                    config_changed = True
-                            
-                            # Update config object in place
-                            config[idx]['params'] = new_params
+    # Initialize States
+    if "current_config" not in st.session_state:
+        st.session_state["current_config"] = []
+    if "unused_pedals" not in st.session_state:
+        st.session_state["unused_pedals"] = []
 
-        # Apply updates if any slider moved
-        if config_changed:
-            st.session_state["current_config"] = config
-            if audio.is_active():
-                audio.update_plugins(config)
-                # No toast here to avoid spamming while dragging
+    ensure_metadata(st.session_state["current_config"])
+    ensure_metadata(st.session_state["unused_pedals"])
+
+    # 1. Add New Pedal Interface
+    st.markdown("#### Add Pedal")
+    col_add1, col_add2 = st.columns([3, 1])
+    all_plugins = list(audio.plugin_map.keys())
+    with col_add1:
+        new_pedal_name = st.selectbox("Select Effect", all_plugins)
+    with col_add2:
+        if st.button("Add to Unused"):
+            # Create default params
+            # We instantiate momentarily to get default params? 
+            # Or just empty params and let defaults handle it? 
+            # To show sliders, we ideally want default values.
+            # We can try to instantiate a dummy to get defaults.
+            try:
+                dummy = audio.plugin_map[new_pedal_name]()
+                # Extract params? Pedalboard objects don't easily export dict params 
+                # unless we access properties.
+                # For simplicity, we start with empty params and let the UI/Audio engine handle defaults.
+                # But to render widgets we need initial values.
+                # Let's check if we can inspect `dummy`.
+                # We'll use a basic heuristic: just empty dict. 
+                # The render loop might need to handle missing params by not showing them 
+                # or we just rely on the user adding them? 
+                # Actually, `audio_manager` builds it fine.
+                # But for the UI sliders, we need keys.
+                # Let's just create a basic entry.
+                new_p = {'plugin': new_pedal_name, 'params': {}, 'uuid': str(uuid.uuid4())[:8], 'active': True}
+                st.session_state["unused_pedals"].append(new_p)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error creating pedal: {e}")
+
+    st.markdown("---")
+    
+    # 2. Sortable Lists (Drag and Drop)
+    st.subheader("Organize Chain")
+    st.info("Drag between 'Unused' and 'Active' to add/remove. Drag within 'Active' to reorder.")
+    
+    # Prepare lists for sortables
+    active_labels = [get_pedal_label(p) for p in st.session_state["current_config"]]
+    unused_labels = [get_pedal_label(p) for p in st.session_state["unused_pedals"]]
+    
+    # Render Sortable
+    sortable_list = [
+        {'header': 'Unused Effects', 'items': unused_labels},
+        {'header': 'Active Chain', 'items': active_labels}
+    ]
+    sorted_data = sort_items(sortable_list, multi_containers=True)
+    new_unused_labels = sorted_data[0]['items']
+    new_active_labels = sorted_data[1]['items']
+    
+    # Check for changes
+    if new_active_labels != active_labels or new_unused_labels != unused_labels:
+        # Reconstruct lists based on UUIDs
+        all_pool = st.session_state["current_config"] + st.session_state["unused_pedals"]
+        pool_map = {get_pedal_label(p): p for p in all_pool}
+        
+        new_active_config = []
+        for lbl in new_active_labels:
+            if lbl in pool_map:
+                new_active_config.append(pool_map[lbl])
+        
+        new_unused_config = []
+        for lbl in new_unused_labels:
+            if lbl in pool_map:
+                new_unused_config.append(pool_map[lbl])
+                
+        st.session_state["current_config"] = new_active_config
+        st.session_state["unused_pedals"] = new_unused_config
+        
+        # Trigger update if streaming
+        if audio.is_active():
+             # Filter only enabled pedals
+            active_filtered = [p for p in new_active_config if p.get('active', True)]
+            audio.update_plugins(active_filtered)
             
-    else:
-        st.info("No pedals configured. Start by generating a tone above!")
+        st.rerun()
+
+    # 3. Active Pedal Controls
+    st.subheader("🎛 Active Chain Controls")
+    
+    config = st.session_state["current_config"]
+    if not config:
+        st.caption("No pedals in active chain.")
+    
+    config_changed = False
+    
+    # We display them in the order of the chain
+    for i, item in enumerate(config):
+        plugin_name = item.get('plugin', 'Unknown')
+        params = item.get('params', {})
+        is_active = item.get('active', True)
+        uuid_str = item.get('uuid', '')
+        
+        # Visual indication of active status
+        status_icon = "🟢" if is_active else "⚪"
+        expander_title = f"{status_icon} {plugin_name} (Position {i+1})"
+        
+        with st.expander(expander_title, expanded=is_active):
+            # On/Off Switch
+            col_sw, col_params = st.columns([1, 4])
+            with col_sw:
+                new_active = st.toggle("Enabled", value=is_active, key=f"active_{uuid_str}")
+                if new_active != is_active:
+                    item['active'] = new_active
+                    config_changed = True
+            
+            with col_params:
+                # If we don't have params yet (newly added), try to populate default keys?
+                # This is tricky without inspecting the class. 
+                # For now, we only show what we have.
+                if not params:
+                    st.caption("Default parameters active.")
+                
+                new_params = {}
+                for key, val in params.items():
+                    unique_key = f"pedal_{uuid_str}_{key}"
+                    new_val = render_param_widget(key, val, unique_key)
+                    new_params[key] = new_val
+                    if new_val != val:
+                        config_changed = True
+                item['params'] = new_params
+
+    # Update audio if controls changed
+    if config_changed:
+        st.session_state["current_config"] = config
+        if audio.is_active():
+            active_filtered = [p for p in config if p.get('active', True)]
+            audio.update_plugins(active_filtered)
 
 with tab2:
     st.subheader("Last AI Interaction")
     if ai.last_raw_response:
         st.text_area("Raw Response:", value=ai.last_raw_response, height=300)
-        try:
-            st.json(json.loads(ai.last_raw_response))
-        except:
-            st.info("Not valid JSON.")
     else:
         st.write("No data yet.")
