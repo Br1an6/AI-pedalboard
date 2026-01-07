@@ -6,10 +6,10 @@ An intelligent guitar effects processor that configures itself based on natural 
 
 ## Web app
 ![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal.png)
-![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/peda-detail.png)
+![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal-detail.png)
 
 ## Desktop app
-![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/peda-desktop-app.png)
+![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal-desktop-app.png)
 
 ## Features
 
