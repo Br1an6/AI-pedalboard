@@ -57,6 +57,8 @@ An intelligent guitar effects processor that configures itself based on natural 
     python main.py
     ```
 
+    ![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal-app.png)
+
 ## Application Steps
 1.  **Configuration:** Select your Input Device (e.g., audio interface) and Output Device. Ensure the Ollama URL is correct.
 2.  **Tone Description:** Type a description of the tone you want (e.g., "80s rock solo").
