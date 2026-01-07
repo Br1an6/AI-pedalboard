@@ -1,6 +1,8 @@
 # AI-Powered Pedalboard
 
-An intelligent guitar effects processor that configures itself based on natural language descriptions of the desired tone.
+![version](https://img.shields.io/badge/version-0.0.1-blue)
+
+An intelligent guitar effects processor that configures itself based on natural language descriptions of the desired tone. Powered by local LLM (Ollama).
 
 ![alt tag](https://github.com/Br1an6/AI-pedalboard/blob/main/img/pedal.png)
 
@@ -23,6 +25,7 @@ An intelligent guitar effects processor that configures itself based on natural 
         ollama pull llama3
         ```
     *   Ensure Ollama is running (`ollama serve`). If running on a different machine or port, you can configure the URL in the application.
+3. **Tkinter**: (Optional) For running as desktop app.
 
 ## Installation
 
@@ -65,6 +68,10 @@ An intelligent guitar effects processor that configures itself based on natural 
 3.  **Generate:** Click **Generate Tone**.
 4.  **Process:** Click **Start Processing** to hear the result.
 5.  **Adjust:** Use the generated sliders to fine-tune individual pedal parameters.
+
+## TODO:
+* Pedal board UI: drag drop, on off
+* Update the system prompt
 
 ## License
 
