@@ -25,7 +25,18 @@ An intelligent guitar effects processor that configures itself based on natural 
         ollama pull llama3
         ```
     *   Ensure Ollama is running (`ollama serve`). If running on a different machine or port, you can configure the URL in the application.
-3. **Tkinter**: (Optional) For running as desktop app.
+3. **Tkinter**: (Optional) Required if you plan to run the desktop app (`main.py`).
+    * **Linux (Ubuntu/Debian):**
+        ```bash
+        sudo apt-get install python3-tk
+        ```
+    * **macOS:**
+        Usually included with the Python.org installer. If using Homebrew:
+        ```bash
+        brew install python-tk
+        ```
+    * **Windows:**
+        Included with the standard Python installer. If you receive an error, rerun the Python installer, select **Modify**, and ensure **"tcl/tk and IDLE"** is checked.
 
 ## Installation
 
