@@ -148,6 +148,6 @@ To record the output of this application into a DAW (like GarageBand, Logic Pro,
 
 ## License
 
-MIT
+GPL 3.0
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/I3I81RWCLP)
